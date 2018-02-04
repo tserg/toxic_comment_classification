@@ -16,8 +16,11 @@ import pickle
 import numpy as np
 
 from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.externals import joblib
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 
 def process_data(filepath):
     '''
@@ -42,25 +45,22 @@ def process_text(text):
     # remove new line tags
     text=re.sub("\n", " ", text)
     
-    # remove punctuation except apostrophe
-    text=re.sub(r"[^a-zA-Z0-9']", " ", text)
+    # remove numbers and punctuation except apostrophe
+    text=re.sub(r"[^a-zA-Z]", " ", text)
     
-    # tokenise
-    text = text.split()
-    
-    # remove stopwords
-    
-    words = [word for word in text if word not in stopwords.words("English")]
-    
+      
+    # reduce words to their stems
+    # words = [PorterStemmer().stem(w) for w in words]
+
     global comment_count
     comment_count+=1
     if comment_count % 1000 == 0:
         print("Number of comments processed to words = " + str(comment_count))
     
-    return words
+    return text
 
 def preprocess_data(data_train, data_test,
-                    cache_dir, cache_file='preprocessed_data.pkl'):
+                    cache_dir, cache_file='preprocessed_data2.pkl'):
     
     # If cache_file is not None, try to read from it first
     cache_data = None
@@ -89,9 +89,10 @@ def preprocess_data(data_train, data_test,
         words_train, words_test = (cache_data['words_train'], cache_data['words_test'])
     
     return words_train, words_test
+
 '''
-def extract_BoW_features(words_train, words_test, vocabulary_size=5000,
-                         cache_dir, cache_file="bow_features.pkl"):
+def extract_BoW_features(words_train, words_test, cache_dir, vocabulary_size=10000,
+                         cache_file="bow_features.pkl"):
     
     # If cache_file is not None, try to read from it first
     cache_data = None
@@ -111,9 +112,11 @@ def extract_BoW_features(words_train, words_test, vocabulary_size=5000,
         vectorizer = CountVectorizer(max_features=vocabulary_size, preprocessor=lambda x: x,
                                      tokenizer=lambda x: x)
         
-        features_train = vectorizer.fit_transform(words_train).to_array()
+        # removed toarray() from vectorizer.fit_transform because of MemoryError
         
-        features_test = vectorizer.fit_transform(words_test).to_array()
+        features_train = vectorizer.fit_transform(words_train) 
+        
+        features_test = vectorizer.fit_transform(words_test)
         
         if cache_file is not None:
               
@@ -131,3 +134,30 @@ def extract_BoW_features(words_train, words_test, vocabulary_size=5000,
         
     return features_train, features_test, vocabulary
 '''
+
+def tokenize(x, vocab_count):
+    """
+    Tokenize x
+    :param x: List of sentences/strings to be tokenized
+    :param vocab_count: Number of words in the vocabulary
+    :return: Tuple of (tokenized x data, tokenizer used to tokenize x)
+    """
+    # TODO: Implement
+    
+    token = Tokenizer(num_words=vocab_count)
+    token.fit_on_texts(x)
+
+    words = token.texts_to_sequences(x)
+    
+    return words, token
+
+def pad(x, length=100):
+    """
+    Pad x
+    :param x: List of sequences.
+    :param length: Length to pad the sequence to.  If None, use length of longest sequence in x.
+    :return: Padded numpy array of sequences
+    """
+    padded_x = pad_sequences(x, maxlen=length, dtype='int32', padding='post', truncating='post', value=0.)
+    
+    return padded_x

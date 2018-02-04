@@ -63,27 +63,25 @@ test_text_tokenized, test_text_tokenizer = preprocess.tokenize(processed_test_da
 train_text_tokenized = preprocess.pad(train_text_tokenized)
 test_text_tokenized = preprocess.pad(test_text_tokenized)
 
+
+print (train_text_tokenized[1:5])
 print (train_text_tokenized.shape)
 
-train_text_tokenized = np.asarray(train_text_tokenized.reshape((train_text_tokenized.shape[-2], -1, 1)))
+train_text_tokenized = train_text_tokenized.reshape((train_text_tokenized.shape[-2], -1))
 
 # print an example of one-hot encoded comment
 
-'''
-print (train_text_tokenized[1], processed_train_data[1])
-'''
+
+print (train_text_tokenized[1:5])
 print (train_text_tokenized.shape)
-print (train_text_tokenized.shape[0])
-print (train_text_tokenized.shape[1:])
-print (test_text_tokenized.shape)
-print (test_text_tokenized.shape[1:])
 
 # multi-classification RNN model
 
 
 model = Sequential()
 
-model.add(LSTM(512, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
+model.add(Embedding(286228, 128, input_length=100))
+model.add(LSTM(128, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
 model.add(Dense(1, activation='sigmoid'))
 
 print (model.summary())
@@ -93,16 +91,15 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics =['accuracy'
 checkpointer = ModelCheckpoint(filepath='simple_LSTM_1.weights.best.hdf5', verbose=1, save_best_only=True)
 
 
-
-
 # reshape input
 
 #train_text_tokenized = train_text_tokenized.reshape((1, -1, train_text_tokenized.shape[-2]))
 
-hist = model.fit(train_text_tokenized, toxic_label, batch_size = 1024, epochs = 100,
-                 validation_split = 0.2, callbacks=[checkpointer], verbose=2, shuffle=True)
+hist = model.fit(np.array(train_text_tokenized), np.array(toxic_label), batch_size = 1024, epochs = 100,
+                 validation_split = 0.2, callbacks=[checkpointer],
+                 verbose=2, shuffle=True)
 
-predictions = [model.predict(np.expand_dims(sentence,axis=0))[0][0] for sentence in processed_test_data] # predictions in "is_iceberg"
+predictions = [model.predict(np.expand_dims(sentence,axis=0))[0][0] for sentence in test_text_tokenized] # predictions in "is_iceberg"
 
 print (predictions)
 

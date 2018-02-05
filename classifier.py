@@ -42,13 +42,11 @@ test_data_id = list(test_data['id'])
 
 # extract labels
 
-toxic_label = list(train_data['toxic'])
-severe_toxic_label = list(train_data['severe_toxic'])
-obscene_label = list(train_data['obscene'])
-threat_label = list(train_data['threat'])
-insult_label = list(train_data['insult'])
-identity_hate_label = list(train_data['identity_hate'])
+y_train = train_data.iloc[:, 2:]
+y_train = np.array(y_train)
 
+print (y_train.shape)
+print (y_train)
 
 
 words_counter = collections.Counter([word for sentence in processed_train_data for word in sentence.split()]+
@@ -75,18 +73,21 @@ train_text_tokenized = train_text_tokenized.reshape((train_text_tokenized.shape[
 print (train_text_tokenized[1:5])
 print (train_text_tokenized.shape)
 
+print (y_train.shape[1], y_train.shape)
+
 # multi-classification RNN model
 
+'''
 
 model = Sequential()
 
 model.add(Embedding(286228, 128, input_length=100))
 model.add(LSTM(128, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
-model.add(Dense(1, activation='sigmoid'))
+model.add(Dense(y_train.shape[1], activation='sigmoid'))
 
 print (model.summary())
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics =['accuracy'])
+model.compile(optimizer='sgd', loss='binary_crossentropy', metrics =['accuracy'])
 
 checkpointer = ModelCheckpoint(filepath='simple_LSTM_1.weights.best.hdf5', verbose=1, save_best_only=True)
 
@@ -95,7 +96,7 @@ checkpointer = ModelCheckpoint(filepath='simple_LSTM_1.weights.best.hdf5', verbo
 
 #train_text_tokenized = train_text_tokenized.reshape((1, -1, train_text_tokenized.shape[-2]))
 
-hist = model.fit(np.array(train_text_tokenized), np.array(toxic_label), batch_size = 1024, epochs = 100,
+hist = model.fit(np.array(train_text_tokenized), np.array(y_train), batch_size = 1024, epochs = 100,
                  validation_split = 0.2, callbacks=[checkpointer],
                  verbose=2, shuffle=True)
 
@@ -107,7 +108,7 @@ print (len(predictions), len(processed_test_data))
 
 with open('submission_toxic_1.csv', 'w', newline='') as f:
     writer = csv.writer(f)
-    writer.writerow(["id", "toxic"])
+    writer.writerow(["id", "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
     writer.writerows(zip(test_data_id, predictions))
 
-
+'''

@@ -77,38 +77,55 @@ print (y_train.shape[1], y_train.shape)
 
 # multi-classification RNN model
 
-'''
+
 
 model = Sequential()
 
-model.add(Embedding(286228, 128, input_length=100))
-model.add(LSTM(128, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
+model.add(Embedding(286228, 256, input_length=100))
+model.add(LSTM(256, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
 model.add(Dense(y_train.shape[1], activation='sigmoid'))
 
 print (model.summary())
 
 model.compile(optimizer='sgd', loss='binary_crossentropy', metrics =['accuracy'])
 
-checkpointer = ModelCheckpoint(filepath='simple_LSTM_1.weights.best.hdf5', verbose=1, save_best_only=True)
+checkpointer = ModelCheckpoint(filepath='simple_LSTM_2.weights.best.hdf5', verbose=1, save_best_only=True)
 
 
 # reshape input
 
 #train_text_tokenized = train_text_tokenized.reshape((1, -1, train_text_tokenized.shape[-2]))
 
+
 hist = model.fit(np.array(train_text_tokenized), np.array(y_train), batch_size = 1024, epochs = 100,
-                 validation_split = 0.2, callbacks=[checkpointer],
+                 validation_split = 0.3, callbacks=[checkpointer],
                  verbose=2, shuffle=True)
 
-predictions = [model.predict(np.expand_dims(sentence,axis=0))[0][0] for sentence in test_text_tokenized] # predictions in "is_iceberg"
 
-print (predictions)
+
+
+model.load_weights('simple_LSTM_2.weights.best.hdf5')
+
+predictions = model.predict(test_text_tokenized) # predictions in "is_iceberg"
+
+toxic_label_predictions = predictions[:, 0]
+severe_toxic_label_predictions = predictions[:, 1]
+obscene_label_predictions = predictions[:, 2]
+threat_label_predictions = predictions[:, 3]
+insult_label_predictions = predictions[:, 4]
+identity_hate_label_predictions = predictions[:, 5]
+
+
 
 print (len(predictions), len(processed_test_data))
 
-with open('submission_toxic_1.csv', 'w', newline='') as f:
+with open('submission_toxic_2.csv', 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(["id", "toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"])
-    writer.writerows(zip(test_data_id, predictions))
+    writer.writerows(zip(test_data_id, toxic_label_predictions,
+                         severe_toxic_label_predictions,
+                         obscene_label_predictions,
+                         threat_label_predictions,
+                         insult_label_predictions,
+                         identity_hate_label_predictions))
 
-'''

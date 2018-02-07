@@ -14,8 +14,7 @@ import os
 import collections
 import csv
 
-from keras.models import Sequential
-from keras.layers import Embedding, LSTM, Dense, Dropout
+from models import simple_RNN_model, embed_model
 from keras.callbacks import ModelCheckpoint
 
 
@@ -45,66 +44,45 @@ test_data_id = list(test_data['id'])
 y_train = train_data.iloc[:, 2:]
 y_train = np.array(y_train)
 
-print (y_train.shape)
-print (y_train)
-
 
 words_counter = collections.Counter([word for sentence in processed_train_data for word in sentence.split()]+
                                     [word for sentence in processed_test_data for word in sentence.split()])
 
-print (len(processed_train_data))
-print (len(words_counter))
+vocab_size = len(words_counter)
+sentence_length = 100
 
 train_text_tokenized, train_text_tokenizer = preprocess.tokenize(processed_train_data, len(words_counter))
 test_text_tokenized, test_text_tokenizer = preprocess.tokenize(processed_test_data, len(words_counter))
 
-train_text_tokenized = preprocess.pad(train_text_tokenized)
-test_text_tokenized = preprocess.pad(test_text_tokenized)
+train_text_tokenized = preprocess.pad(train_text_tokenized, sentence_length)
+test_text_tokenized = preprocess.pad(test_text_tokenized, sentence_length)
 
-
-print (train_text_tokenized[1:5])
-print (train_text_tokenized.shape)
 
 train_text_tokenized = train_text_tokenized.reshape((train_text_tokenized.shape[-2], -1))
+test_text_tokenized = test_text_tokenized.reshape((test_text_tokenized.shape[-2], -1))
 
-# print an example of one-hot encoded comment
-
-
-print (train_text_tokenized[1:5])
-print (train_text_tokenized.shape)
-
-print (y_train.shape[1], y_train.shape)
+print (train_text_tokenized.shape, train_text_tokenized.shape[1:])
 
 # multi-classification RNN model
 
-
-
-model = Sequential()
-
-model.add(Embedding(286228, 256, input_length=100))
-model.add(LSTM(256, dropout=0.2, input_shape=train_text_tokenized.shape[1:], activation="relu"))
-model.add(Dense(y_train.shape[1], activation='sigmoid'))
+#model = simple_RNN_model(sentence_length, y_train.shape[1])
+model = embed_model(vocab_size, sentence_length, y_train.shape[1])
 
 print (model.summary())
 
-model.compile(optimizer='sgd', loss='binary_crossentropy', metrics =['accuracy'])
-
-checkpointer = ModelCheckpoint(filepath='simple_LSTM_2.weights.best.hdf5', verbose=1, save_best_only=True)
-
-
-# reshape input
+checkpointer = ModelCheckpoint(filepath='embed_model_1.weights.best.hdf5', verbose=1, save_best_only=True)
 
 #train_text_tokenized = train_text_tokenized.reshape((1, -1, train_text_tokenized.shape[-2]))
 
 
 hist = model.fit(np.array(train_text_tokenized), np.array(y_train), batch_size = 1024, epochs = 100,
-                 validation_split = 0.3, callbacks=[checkpointer],
+                 validation_split = 0.2, callbacks=[checkpointer],
                  verbose=2, shuffle=True)
 
 
 
 
-model.load_weights('simple_LSTM_2.weights.best.hdf5')
+model.load_weights('embed_model_1.weights.best.hdf5')
 
 predictions = model.predict(test_text_tokenized) # predictions in "is_iceberg"
 

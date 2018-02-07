@@ -151,7 +151,7 @@ def tokenize(x, vocab_count):
     
     return words, token
 
-def pad(x, length=100):
+def pad(x, length):
     """
     Pad x
     :param x: List of sequences.
